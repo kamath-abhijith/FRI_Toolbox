@@ -15,19 +15,19 @@ x = full(sprandn(1,N,spden));
 y = sinc(Ts - T)*x';
 
 %% Sampling
-nn = 1:5:Nt;
+nn = 1:4:Nt;
 yn = y(nn);
 
 %% HRSE from SWCE form
 haty = fft(yn);
-L = spden*
-wk = ann_filt(haty,floor(L/2));
+L = ceil(spden*N);
+wk = ann_filt(haty,ceil(L));
 
-%% Support Recovery
-tk = N*(wk+2*pi)./(2*pi*n)';
+tk = N*wk./(2*pi);
 
 %% Plots
-figure, stem(n,x,'-g',"LineWidth",1)
+figure, subplot(2,1,1)
+stem(n,x,'-g',"LineWidth",1)
 hold on, grid on
 plot(t,y,'-b',"LineWidth",2)
 stem(t(nn),yn,'-r',"LineWidth",2)
