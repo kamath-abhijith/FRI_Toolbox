@@ -26,7 +26,7 @@ wk = ann_filt(haty,ceil(L));
 tk = N*wk./(2*pi);
 
 %% Plots
-figure, subplot(2,1,1)
+figure
 stem(n,x,'-g',"LineWidth",1)
 hold on, grid on
 plot(t,y,'-b',"LineWidth",2)
