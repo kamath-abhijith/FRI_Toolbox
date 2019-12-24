@@ -45,7 +45,7 @@ estTaul = sort(-T0*estTaul/(2*pi));
 
 % Estimation of amplitudes
 E = exp(-1j*2*pi*(-K:K)'*estTaul'/T0);
-estAl = real(pinv(E)*swce);
+estAl = (2*K+1)*real(pinv(E)*swce);
 
 %% Reconstruction
 xRec = zeros(Nt,1);

@@ -21,7 +21,7 @@ function smsKernel = genSmsKernel(t,order,supp,spOrder)
     % Generate base kernel
     smsSpline = genSpline(t,spOrder,supp);
     smsKernel = (cos(w*t'*(0:order)*supp)*...
-        [1;2*ones(order,1)])'.*smsSpline;
+        [1;2*ones(order,1)])'.*smsSpline/(2*order+1);
 
     % Periodise kernel
     oneSec = (Nt-1)/(2*tMax);
