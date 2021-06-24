@@ -24,7 +24,7 @@ lpf = sinc(100*tlpf);
 y = conv(x,lpf,'same');
 
 % Uniform sampling
-nn = 1:10:Nt;
+nn = 1:25:Nt;
 yn = y(nn);
 Nk = floor(length(yn)/2);
 

@@ -14,7 +14,7 @@ function [freq_est]=ann_filt(y,K)
 % Modified for FRI-FD: Abijith J Kamath
 % kamath-abhijith@github.io
 %
-% For more information, check: parse sampling of signal innovations
+% For more information, check: sparse sampling of signal innovations
 
 % Preprocessing
 y = y(:);
