@@ -47,7 +47,7 @@ def get_shifts(annihilating_filter, support):
     locations = locations.wrap_at(2 * np.pi * uts.rad)
     return np.sort(support * locations.value.reshape(-1) / (2 * np.pi))
 
-def get_weights(swce, locations, tau, M):
+def get_weights(swce, locations, tau):
     '''
     Returns the weights of the FRI signal given the locations
 
@@ -60,14 +60,14 @@ def get_weights(swce, locations, tau, M):
 
     '''
 
-    K = len(locations)
+    M = int(len(swce)//2)
     swce_matrix = np.exp(-1j*2*np.pi*np.outer(np.arange(-M,M+1), locations)/tau)
 
     return (2*M + 1) * np.linalg.pinv(swce_matrix) @ swce
 
 # %% PRONY
 
-def cadzow_ls(x, M, P, rank, num_iter=20, tol=1e-12):
+def cadzow_ls(x, M, P, rank, num_iter=20):
     '''
     Cadzow denoising of x with rank
 

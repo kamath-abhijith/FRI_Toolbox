@@ -47,13 +47,13 @@ def add_noise(data, snr=None, sigma=None):
     '''
 
     if snr:
-        noise = np.random.randn(len(data))
-        noise = noise / np.linalg.norm(noise) * np.linalg.norm(data) * 10 ** (-1.0*snr / 20.)
+        awgn = np.random.randn(len(data))
+        awgn = awgn / np.linalg.norm(awgn) * np.linalg.norm(data) * 10 ** (-1.0*snr / 20.)
 
     elif sigma:
-        noise = np.random.normal(scale=sigma, loc=0, size=data.shape)
+        awgn = np.random.normal(scale=sigma, loc=0, size=data.shape)
 
-    return data + noise
+    return data + awgn
 
 # %% PLOT TOOLS
 
@@ -132,6 +132,41 @@ def plot_hline(level, ax=None, line_colour='black', line_style='-',
     if annotation:
         plt.annotate(annotation, xy=pos, color=line_colour)
 
+def plot_mcerrors(x, y, ax=None, plot_colour='blue', line_width=2,
+    marker_style='o', marker_size=4, line_style='-', legend_label=None,
+    legend_loc='lower left', legend_show=True, title_text=None, dev_alpha=0.5,
+    xaxis_label=None, yaxis_label=None, xlimits=[-30,30], ylimits=[1e-4, 1e2],
+    show=False, save=None):
+    ''' Plot x,y on semilogy '''
+
+    if ax is None:
+        fig = plt.figure(figsize=(12,6))
+        ax = plt.gca()
+
+    means = np.mean(y, axis=1)
+    devs = np.std(y, axis=1)
+    plt.semilogy(x, means, linestyle=line_style, linewidth=line_width,
+        color=plot_colour, marker=marker_style, markersize=marker_size,
+        label=legend_label)
+    plt.fill_between(x, means-devs, means+devs, color=plot_colour,
+        linewidth=0, alpha=dev_alpha)
+
+    if legend_label and legend_show:
+        plt.legend(loc=legend_loc, frameon=True, framealpha=0.8, facecolor='white')
+
+    plt.xlim(xlimits)
+    plt.ylim(ylimits)
+    plt.xlabel(xaxis_label)
+    plt.ylabel(yaxis_label)
+    plt.title(title_text)
+
+    if save:
+        plt.savefig(save + '.pdf', format='pdf')
+
+    if show:
+        plt.show()
+
+    return
 # %% PULSE SHAPES
 
 def cubic_Bspline(t, scale=1):
