@@ -67,7 +67,7 @@ def get_weights(swce, locations, tau):
 
 # %% PRONY
 
-def cadzow_ls(x, M, P, rank, num_iter=20):
+def cadzow_ls(x, M, P, rank, rho=None, num_iter=20):
     '''
     Cadzow denoising of x with rank
 
@@ -75,18 +75,25 @@ def cadzow_ls(x, M, P, rank, num_iter=20):
     :param M: dimension
     :param P: dimension
     :param rank: rank threshold
+    :param rho: projection radius
     :param num_iter: number of iterations
-    :param tol: tolerance
 
     :returns: denoised data
 
     '''
 
     N = 2*M + 1
-    for _ in range(num_iter):
-       x = fri_operators.toeplitzification(x, M, P)
-       x = fri_operators.low_rank_approximation(x, rank)
-       x = fri_operators.pinv_toeplitzification(x, N, P)
+    if rho:
+        for _ in range(num_iter):
+            x = proj_l2_ball(x, rho)
+            x = fri_operators.toeplitzification(x, M, P)
+            x = fri_operators.low_rank_approximation(x, rank)
+            x = fri_operators.pinv_toeplitzification(x, N, P)
+    else:
+        for _ in range(num_iter):
+            x = fri_operators.toeplitzification(x, M, P)
+            x = fri_operators.low_rank_approximation(x, rank)
+            x = fri_operators.pinv_toeplitzification(x, N, P)
 
     return x
 
@@ -209,3 +216,66 @@ def gen_fri(G, a, K, noise_level=0, max_ini=100, stop_cri='mse'):
     return b_opt, min_error, c_opt, ini
 
 # %% CPGD
+
+def get_tau(G, P):
+    '''
+    Compute PGD parameter that guarantees convergence
+
+    :param G: forward matrix
+    :param P: model order
+
+    :return: largest PGD parameter that guarantees convergence
+
+    '''
+
+    eig_vals, _ = np.linalg.eig(np.conj(G).T @ G)
+    beta = np.max(eig_vals)
+
+    lower_lim = np.abs((1-1/np.sqrt(P+1)) / beta)
+    upper_lim = np.abs((1+1/np.sqrt(P+1)) / beta)
+
+    return lower_lim + (upper_lim-lower_lim) * np.random.rand()
+
+def proj_l2_ball(x, rho):
+    '''
+    Projection of x onto l2 ball with radius rho
+
+    :param x: input data
+    :param rho: radius
+
+    :returns: projection
+
+    '''
+    
+    norm = np.linalg.norm(x)
+    if norm <= rho:
+        return x
+    else:
+        return rho*x/norm
+
+def cpgd(G, y, tau, P, rank, rho, init, num_iter=50):
+    '''
+    CPGD for FRI
+
+    :param G: forward matrix
+    :param y: measurements
+    :param tau: parameter for PGD
+    :param P: model order
+    :param rank: rank threshold
+    :param rho: radius of threshold
+    :param init: initialisation
+
+    :returns: fourier series coefficients
+
+    '''
+
+    _, N = G.shape
+    M = int(N // 2)
+
+    x = init
+    for _ in range(num_iter):
+        der = 2 * np.conj(G).T @ (G@x - y)
+        z = x - tau * der
+        x = cadzow_ls(z, M, P, rank, rho)
+
+    return x
