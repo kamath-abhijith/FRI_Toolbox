@@ -121,4 +121,91 @@ def prony_tls(swce, model_order):
 
 # %% GENERALISED FRI
 
+def gen_fri(G, a, K, noise_level=0, max_ini=100, stop_cri='mse'):
+    '''
+    Alternating minimisation for Generalised FRI
+
+    :param G: forward model
+    :param a: measurements
+    :param K: model order
+    :param noise_level: noise level
+    :param max_ini: maximun iterations
+    :param stop_cri: stopping criterion
+
+    :returns: fourier series coefficients
+              minimum error
+              annihilating filter
+              initialisation
+
+    See Pan et al. [2], for detailed codes
+
+    '''
+    compute_mse = (stop_cri == 'mse')
+    M = G.shape[1]
+    GtG = np.dot(G.conj().T, G)
+    Gt_a = np.dot(G.conj().T, a)
+
+    max_iter = 50
+    min_error = float('inf')
+    # beta = linalg.solve(GtG, Gt_a)
+    beta = lin.lstsq(G, a)[0]
+
+    Tbeta = fri_operators.Tmtx(beta, K)
+    rhs = np.concatenate((np.zeros(2 * M + 1), [1.]))
+    rhs_bl = np.concatenate((Gt_a, np.zeros(M - K)))
+
+    for ini in range(max_ini):
+        c = np.random.randn(K + 1) + 1j * np.random.randn(K + 1)
+        c0 = c.copy()
+        error_seq = np.zeros(max_iter)
+        R_loop = fri_operators.Rmtx(c, K, M)
+
+        # first row of mtx_loop
+        mtx_loop_first_row = np.hstack((np.zeros((K + 1, K + 1)), Tbeta.conj().T,
+                                        np.zeros((K + 1, M)), c0[:, np.newaxis]))
+        # last row of mtx_loop
+        mtx_loop_last_row = np.hstack((c0[np.newaxis].conj(),
+                                       np.zeros((1, 2 * M - K + 1))))
+
+        for loop in range(max_iter):
+            mtx_loop = np.vstack((mtx_loop_first_row,
+                                  np.hstack((Tbeta, np.zeros((M - K, M - K)),
+                                             -R_loop, np.zeros((M - K, 1)))),
+                                  np.hstack((np.zeros((M, K + 1)), -R_loop.conj().T,
+                                             GtG, np.zeros((M, 1)))),
+                                  mtx_loop_last_row
+                                  ))
+
+            # matrix should be Hermitian symmetric
+            mtx_loop += mtx_loop.conj().T
+            mtx_loop *= 0.5
+            # mtx_loop = (mtx_loop + mtx_loop.conj().T) / 2.
+
+            c = lin.solve(mtx_loop, rhs)[:K + 1]
+
+            R_loop = fri_operators.Rmtx(c, K, M)
+
+            mtx_brecon = np.vstack((np.hstack((GtG, R_loop.conj().T)),
+                                    np.hstack((R_loop, np.zeros((M - K, M - K))))
+                                    ))
+
+            # matrix should be Hermitian symmetric
+            mtx_brecon += mtx_brecon.conj().T
+            mtx_brecon *= 0.5
+            # mtx_brecon = (mtx_brecon + mtx_brecon.conj().T) / 2.
+
+            b_recon = lin.solve(mtx_brecon, rhs_bl)[:M]
+
+            error_seq[loop] = lin.norm(a - np.dot(G, b_recon))
+            if error_seq[loop] < min_error:
+                min_error = error_seq[loop]
+                b_opt = b_recon
+                c_opt = c
+            if min_error < noise_level and compute_mse:
+                break
+        if min_error < noise_level and compute_mse:
+            break
+
+    return b_opt, min_error, c_opt, ini
+
 # %% CPGD

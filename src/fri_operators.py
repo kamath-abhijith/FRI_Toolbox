@@ -126,6 +126,24 @@ def pinv_toeplitzification(x, N, P):
 
     return adj_toeplitzification(x, N, P) / toep_gram(P, N)
 
+def Tmtx(data, K):
+    '''
+    Construct convolution matrix for a filter specified by 'data'
+
+    '''
+    return splin.toeplitz(data[K::], data[K::-1])
+
+def Rmtx(data, K, seq_len):
+    '''
+    A dual convolution matrix of Tmtx. Use the commutativness of a convolution:
+    a * b = b * c
+    Here seq_len is the INPUT sequence length
+
+    '''
+    col = np.concatenate(([data[-1]], np.zeros(seq_len - K - 1)))
+    row = np.concatenate((data[::-1], np.zeros(seq_len - K - 1)))
+    return splin.toeplitz(col, row)
+
 # %% CADZOW DENOISING
 
 def low_rank_approximation(data, rank):

@@ -122,7 +122,7 @@ def plot_signal(x, y, ax=None, plot_colour='blue', xaxis_label=None,
 
     return
 
-def plot_hline(level, ax=None, line_colour='black', line_style='-',
+def plot_hline(level=0, ax=None, line_colour='black', line_style='-',
     line_width=1, annotation=None, pos=(1,1)):
     if ax is None:
         fig = plt.figure(figsize=(12,6))
